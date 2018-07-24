@@ -1,25 +1,9 @@
-/*
- * Copyright (C) 2016 Infineon Technologies AG. All rights reserved.
- *
- * Infineon Technologies AG (Infineon) is supplying this software for use with
- * Infineon's microcontrollers.
- * This file can be freely distributed within development tools that are
- * supporting such microcontrollers.
- *
- * THIS SOFTWARE IS PROVIDED "AS IS". NO WARRANTIES, WHETHER EXPRESS, IMPLIED
- * OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
- * INFINEON SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL,
- * OR CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
- *
- */
-
 /**
  * @file
- * @date 02 May, 2016
+ * @date 1:27 AM 7/25/2018
  * @version 1.0.0
  *
- * @brief XMC1100 XMC_2Go RTX Blinky example
+ * @brief RTOS example
  *
  * Two threads are defined to switch on/off the LEDs in the board periodically
  *
@@ -35,49 +19,110 @@
 
 #define LED1 P1_0
 #define LED2 P1_1
+#define BLINK_DELAY_N	50000
 
-/*----------------------------------------------------------------------------
- * blinkLED: blink LED and wait for signal to go to next LED
- *----------------------------------------------------------------------------*/
-void blinkLED(void const *argument) 
+/* Initialize peripherals */
+void LED_Initialize(void)
 {
-  for (;;) 
-	{
-    XMC_GPIO_ToggleOutput(LED1);
-    osSignalWait(0x0001, osWaitForever);
-    XMC_GPIO_ToggleOutput(LED2);
-    osSignalWait(0x0001, osWaitForever);
-  }
-
-}
-osThreadId tid_blinkLED;
-osThreadDef(blinkLED, osPriorityNormal, 1, 0);
-
-/*----------------------------------------------------------------------------
- * mainThread: Switch on/off LEDs sequentially every 500ms
- *----------------------------------------------------------------------------*/
-void mainThread(void const *argument) 
-{
-  for (;;) 
-	{
-    osDelay(500);
-    osSignalSet(tid_blinkLED, 0x0001);
-  }
-}
-osThreadId tid_mainThread;
-osThreadDef(mainThread, osPriorityNormal, 1, 0);
-
-int main(void)
-{
-	osKernelInitialize();
-	
 	/* Initialize peripherals */
 	XMC_GPIO_SetMode(LED1, XMC_GPIO_MODE_OUTPUT_PUSH_PULL);
 	XMC_GPIO_SetMode(LED2, XMC_GPIO_MODE_OUTPUT_PUSH_PULL);
+}
+
+void LED_On(uint8_t n)
+{
+	switch(n)
+	{
+		case 1:
+			XMC_GPIO_SetOutputHigh(LED1);
+			break;
+		
+		case 2:
+			XMC_GPIO_SetOutputHigh(LED2);
+			break;
+		
+		default:
+			break;
+	}
+}
+
+void LED_Off(uint8_t n)
+{
+	switch(n)
+	{
+		case 1:
+			XMC_GPIO_SetOutputLow(LED1);
+			break;
+		
+		case 2:
+			XMC_GPIO_SetOutputLow(LED2);
+			break;
+		
+		default:
+			break;
+	}
+}
+
+/*----------------------------------------------------------------------------
+  Simple delay loop 
+ *---------------------------------------------------------------------------*/
+
+void delay(uint32_t count)
+{
+	for(uint32_t index =0; index<count; index++)
+	{
+		__NOP();
+	}
+}
+
+/*----------------------------------------------------------------------------
+  Flash LED 1
+ *---------------------------------------------------------------------------*/
+void led_thread1 (void const *argument) 
+{
+	while(1)
+	{
+		LED_On(1);                          
+		delay(BLINK_DELAY_N);
+		LED_Off(1);
+		delay(BLINK_DELAY_N);
+	}
+}
+
+/*----------------------------------------------------------------------------
+ Flash LED 2
+ *---------------------------------------------------------------------------*/
+void led_thread2 (void const *argument) 
+{
+	while(1)
+	{
+		LED_On(2);                          
+		delay(BLINK_DELAY_N);
+		LED_Off(2);
+		delay(BLINK_DELAY_N);
+	}
+}
+
+/*----------------------------------------------------------------------------
+ Define the thread handles and thread parameters
+ *---------------------------------------------------------------------------*/
+
+osThreadId main_ID,led_ID1,led_ID2;	
+osThreadDef(led_thread2, osPriorityNormal, 1, 0);
+osThreadDef(led_thread1, osPriorityNormal, 1, 0);
+
+int main(void)
+{
+	osKernelInitialize ();                    // initialize CMSIS-RTOS
+		
+	LED_Initialize ();
 	
-  /* create threads */
-  tid_blinkLED = osThreadCreate(osThread(blinkLED), NULL);
-	tid_mainThread = osThreadCreate(osThread(mainThread), NULL);
-	
-	osKernelStart();
+	led_ID2 = osThreadCreate(osThread(led_thread2), NULL);
+	led_ID1 = osThreadCreate(osThread(led_thread1), NULL);
+
+	osKernelStart ();                         // start thread execution 
+	while(1)
+	{
+		;
+	}
 }
