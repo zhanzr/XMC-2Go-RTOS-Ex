@@ -19,7 +19,7 @@
 
 #define LED1 P1_0
 #define LED2 P1_1
-#define BLINK_DELAY_N	50000
+#define BLINK_DELAY_N	100000
 
 /* Initialize peripherals */
 void LED_Initialize(void)
@@ -76,29 +76,16 @@ void delay(uint32_t count)
 }
 
 /*----------------------------------------------------------------------------
-  Flash LED 1
+  Flash LED 
  *---------------------------------------------------------------------------*/
-void led_thread1 (void const *argument) 
+void led_thread(void const *argument) 
 {
+	uint32_t led_n = (uint32_t)argument;
 	while(1)
 	{
-		LED_On(1);                          
+		LED_On(led_n);                          
 		delay(BLINK_DELAY_N);
-		LED_Off(1);
-		delay(BLINK_DELAY_N);
-	}
-}
-
-/*----------------------------------------------------------------------------
- Flash LED 2
- *---------------------------------------------------------------------------*/
-void led_thread2 (void const *argument) 
-{
-	while(1)
-	{
-		LED_On(2);                          
-		delay(BLINK_DELAY_N);
-		LED_Off(2);
+		LED_Off(led_n);
 		delay(BLINK_DELAY_N);
 	}
 }
@@ -108,8 +95,7 @@ void led_thread2 (void const *argument)
  *---------------------------------------------------------------------------*/
 
 osThreadId main_ID,led_ID1,led_ID2;	
-osThreadDef(led_thread2, osPriorityNormal, 1, 0);
-osThreadDef(led_thread1, osPriorityNormal, 1, 0);
+osThreadDef(led_thread, osPriorityNormal, 1, 0);
 
 int main(void)
 {
@@ -117,8 +103,8 @@ int main(void)
 		
 	LED_Initialize ();
 	
-	led_ID2 = osThreadCreate(osThread(led_thread2), NULL);
-	led_ID1 = osThreadCreate(osThread(led_thread1), NULL);
+	led_ID2 = osThreadCreate(osThread(led_thread), (void*)1);
+	led_ID1 = osThreadCreate(osThread(led_thread), (void*)2);
 
 	osKernelStart ();                         // start thread execution 
 	while(1)
