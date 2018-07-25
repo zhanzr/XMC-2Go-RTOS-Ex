@@ -22,6 +22,11 @@
 #define BLINK_DELAY_N	100000
 #define BLINK_DELAY_MS	500
 
+void timer_cb(void const *param);
+
+osTimerDef(timer0_handle, timer_cb);
+osTimerDef(timer1_handle, timer_cb);
+
 /* Initialize peripherals */
 void LED_Initialize(void)
 {
@@ -64,39 +69,41 @@ void LED_Off(uint8_t n)
 	}
 }
 
-/*----------------------------------------------------------------------------
-  Simple delay loop 
- *---------------------------------------------------------------------------*/
-
-void delay(uint32_t count)
+void LED_Toggle(uint8_t n)
 {
-	for(uint32_t index =0; index<count; index++)
+	switch(n)
 	{
-		__NOP();
+		case 1:
+			XMC_GPIO_ToggleOutput(LED1);
+			break;
+		
+		case 2:
+			XMC_GPIO_ToggleOutput(LED2);
+			break;
+		
+		default:
+			break;
 	}
 }
-
 /*----------------------------------------------------------------------------
-  Flash LED 
+  Timer callback function. Toggle the LED associated with the timer
  *---------------------------------------------------------------------------*/
-void led_thread(void const *argument) 
+void timer_cb(void const *param)
 {
-	uint32_t led_n = (uint32_t)argument;
-	while(1)
+	switch( (uint32_t) param)
 	{
-		LED_On(led_n);                          
-		osDelay(BLINK_DELAY_MS);
-		LED_Off(led_n);
-		osDelay(BLINK_DELAY_MS);
+		case 1:
+			LED_Toggle(1);
+		break;
+
+		case 2:
+			LED_Toggle(2);
+		break;
+
+		default:
+		break;
 	}
 }
-
-/*----------------------------------------------------------------------------
- Define the thread handles and thread parameters
- *---------------------------------------------------------------------------*/
-
-osThreadId main_ID,led_ID1,led_ID2;	
-osThreadDef(led_thread, osPriorityNormal, 1, 0);
 
 int main(void)
 {
@@ -104,9 +111,12 @@ int main(void)
 		
 	LED_Initialize ();
 	
-	led_ID2 = osThreadCreate(osThread(led_thread), (void*)1);
-	led_ID1 = osThreadCreate(osThread(led_thread), (void*)2);
+	osTimerId timer1 = osTimerCreate(osTimer(timer0_handle), osTimerPeriodic, (void *)1);	
+	osTimerId timer2 = osTimerCreate(osTimer(timer1_handle), osTimerPeriodic, (void *)2);	
 
+	osTimerStart(timer1, BLINK_DELAY_MS);	
+	osTimerStart(timer2, BLINK_DELAY_MS*2);	
+	
 	osKernelStart ();                         // start thread execution 
 	while(1)
 	{
