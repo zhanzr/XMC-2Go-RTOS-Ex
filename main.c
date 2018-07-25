@@ -20,6 +20,7 @@
 #define LED1 P1_0
 #define LED2 P1_1
 #define BLINK_DELAY_N	100000
+#define BLINK_DELAY_MS	500
 
 /* Initialize peripherals */
 void LED_Initialize(void)
@@ -84,9 +85,9 @@ void led_thread(void const *argument)
 	while(1)
 	{
 		LED_On(led_n);                          
-		delay(BLINK_DELAY_N);
+		osDelay(BLINK_DELAY_MS);
 		LED_Off(led_n);
-		delay(BLINK_DELAY_N);
+		osDelay(BLINK_DELAY_MS);
 	}
 }
 
