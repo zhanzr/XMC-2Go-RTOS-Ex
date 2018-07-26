@@ -93,6 +93,14 @@ void delay(uint32_t count)
 	}
 }
 
+void delay_wfe(uint32_t count)
+{
+	for(uint32_t index =0; index<count; index++)
+	{
+		__wfe();
+	}
+}
+
 /*--------------------------- os_idle_demon ---------------------------------*/
 
 /// \brief The idle demon is running when no other thread is ready to run
@@ -101,9 +109,9 @@ void os_idle_demon (void) {
   for (;;) {
     /* HERE: include optional user code to be executed when no thread runs.*/
 		LED_Toggle(1);
-		delay(BLINK_DELAY_N);
+		delay_wfe(BLINK_DELAY_MS);
 		LED_Toggle(2);
-		delay(BLINK_DELAY_N*3);
+		delay_wfe(BLINK_DELAY_MS*3);
 	}
 }
 
