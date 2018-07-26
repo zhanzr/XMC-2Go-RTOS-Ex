@@ -222,7 +222,7 @@
 /*--------------------------- os_idle_demon ---------------------------------*/
 
 /// \brief The idle demon is running when no other thread is ready to run
-void os_idle_demon (void) {
+__weak void os_idle_demon (void) {
  
   for (;;) {
     /* HERE: include optional user code to be executed when no thread runs.*/

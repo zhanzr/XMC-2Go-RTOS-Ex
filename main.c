@@ -22,11 +22,6 @@
 #define BLINK_DELAY_N	100000
 #define BLINK_DELAY_MS	500
 
-void timer_cb(void const *param);
-
-osTimerDef(timer0_handle, timer_cb);
-osTimerDef(timer1_handle, timer_cb);
-
 /* Initialize peripherals */
 void LED_Initialize(void)
 {
@@ -85,41 +80,46 @@ void LED_Toggle(uint8_t n)
 			break;
 	}
 }
+
 /*----------------------------------------------------------------------------
-  Timer callback function. Toggle the LED associated with the timer
+  Simple delay loop 
  *---------------------------------------------------------------------------*/
-void timer_cb(void const *param)
+
+void delay(uint32_t count)
 {
-	switch( (uint32_t) param)
+	for(uint32_t index =0; index<count; index++)
 	{
-		case 1:
-			LED_Toggle(1);
-		break;
-
-		case 2:
-			LED_Toggle(2);
-		break;
-
-		default:
-		break;
+		__NOP();
 	}
 }
+
+/*--------------------------- os_idle_demon ---------------------------------*/
+
+/// \brief The idle demon is running when no other thread is ready to run
+void os_idle_demon (void) {
+ 
+  for (;;) {
+    /* HERE: include optional user code to be executed when no thread runs.*/
+		LED_Toggle(1);
+		delay(BLINK_DELAY_N);
+		LED_Toggle(2);
+		delay(BLINK_DELAY_N*3);
+	}
+}
+
+/*----------------------------------------------------------------------------
+ Define the thread handles and thread parameters
+ *---------------------------------------------------------------------------*/
 
 int main(void)
 {
 	osKernelInitialize ();                    // initialize CMSIS-RTOS
 		
 	LED_Initialize ();
-	
-	osTimerId timer1 = osTimerCreate(osTimer(timer0_handle), osTimerPeriodic, (void *)1);	
-	osTimerId timer2 = osTimerCreate(osTimer(timer1_handle), osTimerPeriodic, (void *)2);	
-
-	osTimerStart(timer1, BLINK_DELAY_MS);	
-	osTimerStart(timer2, BLINK_DELAY_MS*2);	
-	
+		
 	osKernelStart ();                         // start thread execution 
-	while(1)
-	{
-		;
-	}
+//	while(1)
+//	{
+//		;
+//	}
 }
