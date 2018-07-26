@@ -22,6 +22,21 @@
 #define BLINK_DELAY_N	100000
 #define BLINK_DELAY_MS	500
 
+#define LED_SIGNAL_1	0x01
+#define LED_SIGNAL_2	0x02
+
+void led_Thread1 (void const *argument);
+void led_Thread2 (void const *argument);
+void signal_Thread (void const *argument);
+
+osThreadDef(led_Thread1, osPriorityNormal, 1, 0);
+osThreadDef(led_Thread2, osPriorityNormal, 1, 0);
+osThreadDef(signal_Thread, osPriorityNormal, 1, 0);
+
+osThreadId T_led_ID1;
+osThreadId T_led_ID2;
+osThreadId T_signal;
+
 /* Initialize peripherals */
 void LED_Initialize(void)
 {
@@ -82,36 +97,41 @@ void LED_Toggle(uint8_t n)
 }
 
 /*----------------------------------------------------------------------------
-  Simple delay loop 
+  Flash LED 1 when signaled by the other thread
  *---------------------------------------------------------------------------*/
-
-void delay(uint32_t count)
+void led_Thread1 (void const *argument) 
 {
-	for(uint32_t index =0; index<count; index++)
+	for (;;) 
 	{
-		__NOP();
+		osSignalWait (LED_SIGNAL_1,osWaitForever);
+		LED_Toggle(1);                          
 	}
 }
 
-void delay_wfe(uint32_t count)
+/*----------------------------------------------------------------------------
+  Flash LED 2 when signaled by the other thread
+ *---------------------------------------------------------------------------*/
+void led_Thread2 (void const *argument) 
 {
-	for(uint32_t index =0; index<count; index++)
+	for (;;) 
 	{
-		__wfe();
+		osSignalWait (LED_SIGNAL_2,osWaitForever);
+		LED_Toggle(2);                          
 	}
 }
 
-/*--------------------------- os_idle_demon ---------------------------------*/
+/*----------------------------------------------------------------------------
+  Synchronise the flashing of LEDs by setting a signal flag
+ *---------------------------------------------------------------------------*/
+void signal_Thread (void const *argument) 
+{
+	for (;;) 
+	{
+		osSignalSet	(T_led_ID1,LED_SIGNAL_1);
+		osDelay(BLINK_DELAY_MS);
 
-/// \brief The idle demon is running when no other thread is ready to run
-void os_idle_demon (void) {
- 
-  for (;;) {
-    /* HERE: include optional user code to be executed when no thread runs.*/
-		LED_Toggle(1);
-		delay_wfe(BLINK_DELAY_MS);
-		LED_Toggle(2);
-		delay_wfe(BLINK_DELAY_MS*3);
+		osSignalSet	(T_led_ID2,LED_SIGNAL_2);
+		osDelay(BLINK_DELAY_MS);
 	}
 }
 
@@ -124,10 +144,10 @@ int main(void)
 	osKernelInitialize ();                    // initialize CMSIS-RTOS
 		
 	LED_Initialize ();
-		
+	
+	T_led_ID1 = osThreadCreate(osThread(led_Thread1), NULL);	
+	T_led_ID2 = osThreadCreate(osThread(led_Thread2), NULL);
+	T_signal = osThreadCreate(osThread(signal_Thread), NULL);
+	
 	osKernelStart ();                         // start thread execution 
-//	while(1)
-//	{
-//		;
-//	}
 }
