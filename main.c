@@ -160,11 +160,7 @@ volatile uint32_t g_tmpU32;
 volatile XMC_SCU_INTERRUPT_EVENT_t g_sch_event;
 void SCU_1_IRQHandler(void)
 {
-	__NOP();
 	g_sch_event = XMC_SCU_INTERUPT_GetEventStatus();
-	__NOP();
-	__NOP();
-	__NOP();
 	
 //	XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);	
 	if(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_HIGH))
