@@ -115,8 +115,8 @@ void led_Thread1 (void const *argument)
 	for (;;) 
 	{
 		osSignalWait (LED_SIGNAL_1,osWaitForever);
-		LED_On(1);                          
-		LED_Off(2);                          
+		LED_On(2);                          
+		LED_Off(1);                          
 	}
 }
 
@@ -128,8 +128,8 @@ void led_Thread2 (void const *argument)
 	for (;;) 
 	{
 		osSignalWait (LED_SIGNAL_2,osWaitForever);
-		LED_On(2);                          
-		LED_Off(1);     
+		LED_On(1);                          
+		LED_Off(2);     
 	}
 }
 
@@ -151,20 +151,11 @@ void DTS_Init(void)
   NVIC_EnableIRQ(SCU_1_IRQn);
 }
 
-void SCU_0_IRQHandler(void)
-{
-	__NOP();
-}
-
 volatile uint32_t g_tmpU32;
 volatile XMC_SCU_INTERRUPT_EVENT_t g_sch_event;
 void SCU_1_IRQHandler(void)
 {
-	__NOP();
 	g_sch_event = XMC_SCU_INTERUPT_GetEventStatus();
-	__NOP();
-	__NOP();
-	__NOP();
 	
 //	XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);	
 	if(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_HIGH))
@@ -181,11 +172,13 @@ void SCU_1_IRQHandler(void)
 	
 }
 
-void SCU_2_IRQHandler(void)
-{
-	__NOP();
-}
 
+void __svc(1) DTS_sample(void);
+void __SVC_1(void)
+{
+//		g_tmpU32 = XMC_SCU_GetTemperature();
+		g_tmpU32 = XMC_SCU_CalcTemperature();	
+}
 /*----------------------------------------------------------------------------
   Synchronise the flashing of LEDs by setting a signal flag
  *---------------------------------------------------------------------------*/
@@ -194,8 +187,7 @@ void signal_Thread (void const *argument)
 {
 	for (;;) 
 	{
-//		g_tmpU32 = XMC_SCU_GetTemperature();
-		g_tmpU32 = XMC_SCU_CalcTemperature();
+		DTS_sample();
 		
 		osDelay(DTS_SAMPLE_TICK);
 	}
