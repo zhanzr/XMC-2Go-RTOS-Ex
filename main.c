@@ -5,7 +5,7 @@
  *
  * @brief RTOS example
  *
- * Two threads are defined to switch on/off the LEDs in the board periodically
+ * RTOS Demo, see READ.md for document
  *
  * History
  *
@@ -13,14 +13,25 @@
  * - Initial
  *
  */
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+#include <XMC1100.h>
+#include <xmc_scu.h>
+#include <xmc_rtc.h>
+#include <xmc_uart.h>
+#include <xmc_gpio.h>
+#include <xmc_flash.h>
 
 #include "cmsis_os.h"
-#include "xmc_gpio.h"
 
 #define LED1 P1_0
 #define LED2 P1_1
 #define BLINK_DELAY_N	100000
-#define BLINK_DELAY_MS	500
+#define BLINK_DELAY_TICK	500
+#define DTS_SAMPLE_TICK	400
 
 #define LED_SIGNAL_1	0x01
 #define LED_SIGNAL_2	0x02
@@ -104,7 +115,8 @@ void led_Thread1 (void const *argument)
 	for (;;) 
 	{
 		osSignalWait (LED_SIGNAL_1,osWaitForever);
-		LED_Toggle(1);                          
+		LED_On(1);                          
+		LED_Off(2);                          
 	}
 }
 
@@ -116,22 +128,76 @@ void led_Thread2 (void const *argument)
 	for (;;) 
 	{
 		osSignalWait (LED_SIGNAL_2,osWaitForever);
-		LED_Toggle(2);                          
+		LED_On(2);                          
+		LED_Off(1);     
 	}
+}
+
+void DTS_Init(void)
+{
+	/* Enable DTS */
+	XMC_SCU_StartTempMeasurement();
+  
+//	XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);
+	//limit Kelvin degree temperature higher compare limit in range [233,388]  	
+	XMC_SCU_SetTempHighLimit(273 + 37);
+	
+	//limit Kelvin degree temperature lower compare limit in range [233,388]  
+	XMC_SCU_SetTempLowLimit(273 + 36);
+	
+	XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH);
+  XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_LOW);
+  NVIC_SetPriority(SCU_1_IRQn, 3);
+  NVIC_EnableIRQ(SCU_1_IRQn);
+}
+
+void SCU_0_IRQHandler(void)
+{
+	__NOP();
+}
+
+volatile uint32_t g_tmpU32;
+volatile XMC_SCU_INTERRUPT_EVENT_t g_sch_event;
+void SCU_1_IRQHandler(void)
+{
+	__NOP();
+	g_sch_event = XMC_SCU_INTERUPT_GetEventStatus();
+	__NOP();
+	__NOP();
+	__NOP();
+	
+//	XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);	
+	if(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_HIGH))
+	{
+		XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH);	
+		osSignalSet	(T_led_ID1,LED_SIGNAL_1);	
+	}
+	
+	if(XMC_SCU_INTERRUPT_EVENT_TSE_LOW == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_LOW))
+	{
+		XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_LOW);	
+		osSignalSet	(T_led_ID2,LED_SIGNAL_2);
+	}
+	
+}
+
+void SCU_2_IRQHandler(void)
+{
+	__NOP();
 }
 
 /*----------------------------------------------------------------------------
   Synchronise the flashing of LEDs by setting a signal flag
  *---------------------------------------------------------------------------*/
+
 void signal_Thread (void const *argument) 
 {
 	for (;;) 
 	{
-		osSignalSet	(T_led_ID1,LED_SIGNAL_1);
-		osDelay(BLINK_DELAY_MS);
-
-		osSignalSet	(T_led_ID2,LED_SIGNAL_2);
-		osDelay(BLINK_DELAY_MS);
+//		g_tmpU32 = XMC_SCU_GetTemperature();
+		g_tmpU32 = XMC_SCU_CalcTemperature();
+		
+		osDelay(DTS_SAMPLE_TICK);
 	}
 }
 
@@ -145,6 +211,8 @@ int main(void)
 		
 	LED_Initialize ();
 	
+	DTS_Init();
+
 	T_led_ID1 = osThreadCreate(osThread(led_Thread1), NULL);	
 	T_led_ID2 = osThreadCreate(osThread(led_Thread2), NULL);
 	T_signal = osThreadCreate(osThread(signal_Thread), NULL);
