@@ -140,10 +140,10 @@ void DTS_Init(void)
   
 //	XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);
 	//limit Kelvin degree temperature higher compare limit in range [233,388]  	
-	XMC_SCU_SetTempHighLimit(273 + 37);
+	XMC_SCU_SetTempHighLimit(273 + 41);
 	
 	//limit Kelvin degree temperature lower compare limit in range [233,388]  
-	XMC_SCU_SetTempLowLimit(273 + 36);
+	XMC_SCU_SetTempLowLimit(273 + 39);
 	
 	XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH);
   XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_LOW);
@@ -151,21 +151,12 @@ void DTS_Init(void)
   NVIC_EnableIRQ(SCU_1_IRQn);
 }
 
-void SCU_0_IRQHandler(void)
-{
-	__NOP();
-}
-
 volatile uint32_t g_tmpU32;
 volatile XMC_SCU_INTERRUPT_EVENT_t g_sch_event;
 void SCU_1_IRQHandler(void)
 {
-	__NOP();
 	g_sch_event = XMC_SCU_INTERUPT_GetEventStatus();
-	__NOP();
-	__NOP();
-	__NOP();
-	
+
 //	XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);	
 	if(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_HIGH))
 	{
@@ -181,11 +172,12 @@ void SCU_1_IRQHandler(void)
 	
 }
 
-void SCU_2_IRQHandler(void)
+void __svc(1) DTS_sample(void);
+void __SVC_1(void)
 {
-	__NOP();
+//		g_tmpU32 = XMC_SCU_GetTemperature();
+		g_tmpU32 = XMC_SCU_CalcTemperature();	
 }
-
 /*----------------------------------------------------------------------------
   Synchronise the flashing of LEDs by setting a signal flag
  *---------------------------------------------------------------------------*/
@@ -194,8 +186,7 @@ void signal_Thread (void const *argument)
 {
 	for (;;) 
 	{
-//		g_tmpU32 = XMC_SCU_GetTemperature();
-		g_tmpU32 = XMC_SCU_CalcTemperature();
+		DTS_sample();
 		
 		osDelay(DTS_SAMPLE_TICK);
 	}
