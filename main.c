@@ -38,15 +38,19 @@
 
 void led_Thread1 (void const *argument);
 void led_Thread2 (void const *argument);
-void signal_Thread (void const *argument);
 
-osThreadDef(led_Thread1, osPriorityNormal, 1, 0);
+//note the raised priority for led_thread 1
+osThreadDef(led_Thread1, osPriorityAboveNormal, 1, 0);
 osThreadDef(led_Thread2, osPriorityNormal, 1, 0);
-osThreadDef(signal_Thread, osPriorityNormal, 1, 0);
 
 osThreadId T_led_ID1;
 osThreadId T_led_ID2;
-osThreadId T_signal;
+
+/*----------------------------------------------------------------------------
+  Define the semaphore
+ *---------------------------------------------------------------------------*/	
+osSemaphoreId sem1;									
+osSemaphoreDef(sem1);
 
 /* Initialize peripherals */
 void LED_Initialize(void)
@@ -114,9 +118,10 @@ void led_Thread1 (void const *argument)
 {
 	for (;;) 
 	{
-		osSignalWait (LED_SIGNAL_1,osWaitForever);
-		LED_On(2);                          
-		LED_Off(1);                          
+		osSemaphoreWait(sem1, osWaitForever);
+		LED_On(1);                          
+		osDelay(500);
+		LED_Off(1);                        
 	}
 }
 
@@ -127,9 +132,11 @@ void led_Thread2 (void const *argument)
 {
 	for (;;) 
 	{
-		osSignalWait (LED_SIGNAL_2,osWaitForever);
-		LED_On(1);                          
-		LED_Off(2);     
+		LED_On(2);		
+		osSemaphoreRelease(sem1);
+		osDelay(500);
+		LED_Off(2);
+		osDelay(500);   
 	}
 }
 
@@ -172,26 +179,13 @@ void SCU_1_IRQHandler(void)
 	
 }
 
-
 void __svc(1) DTS_sample(void);
 void __SVC_1(void)
 {
 //		g_tmpU32 = XMC_SCU_GetTemperature();
 		g_tmpU32 = XMC_SCU_CalcTemperature();	
 }
-/*----------------------------------------------------------------------------
-  Synchronise the flashing of LEDs by setting a signal flag
- *---------------------------------------------------------------------------*/
 
-void signal_Thread (void const *argument) 
-{
-	for (;;) 
-	{
-		DTS_sample();
-		
-		osDelay(DTS_SAMPLE_TICK);
-	}
-}
 
 /*----------------------------------------------------------------------------
  Define the thread handles and thread parameters
@@ -203,11 +197,11 @@ int main(void)
 		
 	LED_Initialize ();
 	
-	DTS_Init();
+//	DTS_Init();
 
 	T_led_ID1 = osThreadCreate(osThread(led_Thread1), NULL);	
 	T_led_ID2 = osThreadCreate(osThread(led_Thread2), NULL);
-	T_signal = osThreadCreate(osThread(signal_Thread), NULL);
+	sem1 = osSemaphoreCreate(osSemaphore(sem1), 0);	
 	
 	osKernelStart ();                         // start thread execution 
 }
