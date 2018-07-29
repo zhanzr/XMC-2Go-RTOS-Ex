@@ -27,6 +27,8 @@
 
 #include "cmsis_os.h"
 
+#include "Driver_USART.h"
+
 #define LED1 P1_0
 #define LED2 P1_1
 #define BLINK_DELAY_N	100000
@@ -36,21 +38,52 @@
 #define LED_SIGNAL_1	0x01
 #define LED_SIGNAL_2	0x02
 
-void led_Thread1 (void const *argument);
-void led_Thread2 (void const *argument);
+void led_Thread (void const *argument);
 
-//note the raised priority for led_thread 1
-osThreadDef(led_Thread1, osPriorityAboveNormal, 1, 0);
-osThreadDef(led_Thread2, osPriorityNormal, 1, 0);
-
-osThreadId T_led_ID1;
-osThreadId T_led_ID2;
+osThreadDef(led_Thread, osPriorityNormal, 2, 0);
 
 /*----------------------------------------------------------------------------
   Define the semaphore
  *---------------------------------------------------------------------------*/	
 osSemaphoreId sem1;									
 osSemaphoreDef(sem1);
+
+extern ARM_DRIVER_USART Driver_USART0;
+static ARM_DRIVER_USART *UARTdrv = &Driver_USART0; 
+
+void UART_cb(uint32_t event)
+{
+    switch (event)
+    {
+    case ARM_USART_EVENT_RECEIVE_COMPLETE:  
+     break;
+     
+    case ARM_USART_EVENT_TRANSFER_COMPLETE:
+    case ARM_USART_EVENT_SEND_COMPLETE:
+    case ARM_USART_EVENT_TX_COMPLETE:
+        break;
+ 
+    case ARM_USART_EVENT_RX_TIMEOUT:
+		/* Error: Call debugger or replace with custom error handling */
+        break;
+ 
+    case ARM_USART_EVENT_RX_OVERFLOW:
+    case ARM_USART_EVENT_TX_UNDERFLOW:
+		default:
+		/* Error: Call debugger or replace with custom error handling */
+        break;
+    }
+}
+  
+int stdout_putchar(int ch)
+{
+	XMC_UART_CH_Transmit(XMC_UART0_CH0, ch);
+	for(uint32_t i=0; i<1000; ++i)
+	{
+		__NOP();
+	}
+	return ch;
+}
 
 /* Initialize peripherals */
 void LED_Initialize(void)
@@ -111,76 +144,42 @@ void LED_Toggle(uint8_t n)
 	}
 }
 
-void led_Thread1 (void const *argument) 
+void led_Thread (void const *argument) 
 {
+	uint32_t para = (uint32_t)argument;
+	
 	for (;;) 
 	{
 		osSemaphoreWait(sem1, osWaitForever);
-		LED_On(1);                          
-		osDelay(500);
-		LED_Off(1);                        
-	}
-}
-
-void led_Thread2 (void const *argument) 
-{
-	for (;;) 
-	{
-		LED_On(2);		
+		
+		printf("%s sequence:%u\n",
+		__func__,
+		para);
+		
+		printf("%s\n", osKernelSystemId);
+		printf("%s\n", __DATE__);
+		printf("%s\n", __TIME__);
+		
 		osSemaphoreRelease(sem1);
-		osDelay(500);
-		LED_Off(2);
-		osDelay(500);   
+		
+		osDelay(1);
 	}
 }
 
-void DTS_Init(void)
+void UART_Init(void)
 {
-	/* Enable DTS */
-	XMC_SCU_StartTempMeasurement();
-  
-//	XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);
-	//limit Kelvin degree temperature higher compare limit in range [233,388]  	
-	XMC_SCU_SetTempHighLimit(273 + 37);
-	
-	//limit Kelvin degree temperature lower compare limit in range [233,388]  
-	XMC_SCU_SetTempLowLimit(273 + 36);
-	
-	XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH);
-  XMC_SCU_INTERRUPT_EnableEvent(XMC_SCU_INTERRUPT_EVENT_TSE_LOW);
-  NVIC_SetPriority(SCU_1_IRQn, 3);
-  NVIC_EnableIRQ(SCU_1_IRQn);
+	/*Initialize the UART driver */
+  UARTdrv->Initialize(UART_cb);
+  UARTdrv->PowerControl(ARM_POWER_FULL);
+  UARTdrv->Control(ARM_USART_MODE_ASYNCHRONOUS |
+                   ARM_USART_DATA_BITS_8 |
+                   ARM_USART_PARITY_NONE |
+                   ARM_USART_STOP_BITS_1 , 256000);
+   
+  /* Enable the Transmitter/Receiver line */
+  UARTdrv->Control (ARM_USART_CONTROL_TX, 1);
+	UARTdrv->Control (ARM_USART_CONTROL_RX, 1);
 }
-
-volatile uint32_t g_tmpU32;
-volatile XMC_SCU_INTERRUPT_EVENT_t g_sch_event;
-void SCU_1_IRQHandler(void)
-{
-	g_sch_event = XMC_SCU_INTERUPT_GetEventStatus();
-	
-//	XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_DONE);	
-	if(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_HIGH))
-	{
-		XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_HIGH);	
-		osSignalSet	(T_led_ID1,LED_SIGNAL_1);	
-	}
-	
-	if(XMC_SCU_INTERRUPT_EVENT_TSE_LOW == (g_sch_event&XMC_SCU_INTERRUPT_EVENT_TSE_LOW))
-	{
-		XMC_SCU_INTERRUPT_ClearEventStatus(XMC_SCU_INTERRUPT_EVENT_TSE_LOW);	
-		osSignalSet	(T_led_ID2,LED_SIGNAL_2);
-	}
-	
-}
-
-void __svc(1) DTS_sample(void);
-void __SVC_1(void)
-{
-//		g_tmpU32 = XMC_SCU_GetTemperature();
-		g_tmpU32 = XMC_SCU_CalcTemperature();	
-}
-
-
 /*----------------------------------------------------------------------------
  Define the thread handles and thread parameters
  *---------------------------------------------------------------------------*/
@@ -191,11 +190,21 @@ int main(void)
 		
 	LED_Initialize ();
 	
-//	DTS_Init();
+	UART_Init();
 
-	T_led_ID1 = osThreadCreate(osThread(led_Thread1), NULL);	
-	T_led_ID2 = osThreadCreate(osThread(led_Thread2), NULL);
-	sem1 = osSemaphoreCreate(osSemaphore(sem1), 0);	
+	printf("2Go semaphore lock @ %u Hz %s\n", 
+	SystemCoreClock, 
+	osKernelSystemId);
+	
+	#ifdef __MICROLIB
+	printf("Microlib\n");
+	#else
+	printf("StandardLib\n");
+#endif
+	
+	osThreadCreate(osThread(led_Thread), (void*)1);	
+	osThreadCreate(osThread(led_Thread), (void*)2);
+	sem1 = osSemaphoreCreate(osSemaphore(sem1), 1);	
 	
 	osKernelStart ();                         // start thread execution 
 }
