@@ -5,4 +5,4 @@ Compliant to Cortex Microcontroller Software Interface Standard (CMSIS).
 Example functionality:
  - Clock Settings:
    - SYSCLK  =           32.00 MHz (see startup_XMC1100.s)
- - Semaphore 1st demo.
+ - SVC call, signal int demo.
