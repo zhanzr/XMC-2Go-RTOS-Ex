@@ -111,9 +111,6 @@ void LED_Toggle(uint8_t n)
 	}
 }
 
-/*----------------------------------------------------------------------------
-  Flash LED 1 when signaled by the other thread
- *---------------------------------------------------------------------------*/
 void led_Thread1 (void const *argument) 
 {
 	for (;;) 
@@ -125,9 +122,6 @@ void led_Thread1 (void const *argument)
 	}
 }
 
-/*----------------------------------------------------------------------------
-  Flash LED 2 when signaled by the other thread
- *---------------------------------------------------------------------------*/
 void led_Thread2 (void const *argument) 
 {
 	for (;;) 
