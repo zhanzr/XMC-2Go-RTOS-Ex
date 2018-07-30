@@ -159,8 +159,6 @@ void led_Thread (void const *argument)
 		
 		osDelay(BLINK_DELAY_TICK);
 		
-		LED_Toggle(para);
-
 		osSemaphoreRelease(sem1);
 	}
 }
@@ -221,7 +219,7 @@ int main(void)
 	printf("StandardLib\n");
 #endif
 	
-	sem1 = osSemaphoreCreate(osSemaphore(sem1), 3);	
+	sem1 = osSemaphoreCreate(osSemaphore(sem1), 2);	
 	
 	T_mux1 = osThreadCreate(osThread(led_Thread), (void*)1);	
 	T_mux2 = osThreadCreate(osThread(led_Thread), (void*)2);
