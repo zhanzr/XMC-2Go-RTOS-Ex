@@ -38,20 +38,32 @@
 #define LED_SIGNAL_1	0x01
 #define LED_SIGNAL_2	0x02
 
-void led_Thread (void const *argument);
-void o_thread (void const *argument);
+void test_Thread (void const *argument);
 
-osThreadDef(led_Thread, osPriorityNormal, 2, 0);
-osThreadDef(o_thread, osPriorityNormal, 1, 0);
+osThreadDef(test_Thread, osPriorityNormal, 3, 0);
 
-osThreadId T_mux1;																			
-osThreadId T_mux2;
-osThreadId T_mux3;
+osThreadId T_thread_ID_1;																			
+osThreadId T_thread_ID_2;
+osThreadId T_thread_ID_3;
 /*----------------------------------------------------------------------------
   Define the semaphore
  *---------------------------------------------------------------------------*/	
 osSemaphoreId sem1;									
 osSemaphoreDef(sem1);
+osSemaphoreId sem2;									
+osSemaphoreDef(sem2);
+
+osSemaphoreId Mutex;									
+osSemaphoreDef(Mutex);
+
+static uint32_t g_cnt;
+
+static uint32_t old_tick1;
+static uint32_t old_tick2;
+static uint32_t old_tick3;
+static uint32_t delta_tick1;
+static uint32_t delta_tick2;
+static uint32_t delta_tick3;
 
 extern ARM_DRIVER_USART Driver_USART0;
 static ARM_DRIVER_USART *UARTdrv = &Driver_USART0; 
@@ -149,39 +161,60 @@ void LED_Toggle(uint8_t n)
 	}
 }
 
-void led_Thread (void const *argument) 
+void test_Thread (void const *argument) 
 {
 	uint32_t para = (uint32_t)argument;
 	
 	for (;;) 
 	{		
-		osSemaphoreWait(sem1, osWaitForever);
+		osSemaphoreWait(Mutex, osWaitForever);
+		g_cnt ++;
+		if(3==g_cnt)
+		{
+			osSemaphoreWait(sem2, osWaitForever);					
+			osSemaphoreRelease(sem1);					
+		}			
+		osSemaphoreRelease(Mutex);	
 		
+		osSemaphoreWait(sem1, osWaitForever);					
+		osSemaphoreRelease(sem2);		
+			
+		switch(para)
+		{
+			case 1:
+			delta_tick1 = osKernelSysTick() - old_tick1;
+			old_tick1 = osKernelSysTick();
+			break;		
+			
+			case 2:
+			delta_tick2 = osKernelSysTick() - old_tick2;
+			old_tick2 = osKernelSysTick();
+			break;	
+			
+			case 3:
+			delta_tick3 = osKernelSysTick() - old_tick3;
+			old_tick3 = osKernelSysTick();
+			printf("%u %u %u\n", delta_tick1, delta_tick2, delta_tick3);		
+			break;	
+
+			default:
+				break;
+		}
 		osDelay(BLINK_DELAY_TICK);
+
+		osSemaphoreWait(Mutex, osWaitForever);
+		g_cnt --;
+		if(0==g_cnt)
+		{
+				osSemaphoreWait(sem1, osWaitForever);					
+				osSemaphoreRelease(sem2);				
+		}
+		osSemaphoreRelease(Mutex);	
 		
-		osSemaphoreRelease(sem1);
-	}
+		osSemaphoreWait(sem2, osWaitForever);					
+		osSemaphoreRelease(sem1);			
+	}	
 }
-
-static uint32_t old_tick;
-void o_thread (void const *argument) 
-{
-	uint32_t para = (uint32_t)argument;
-		
-	for (;;) 
-	{		
-		osSemaphoreWait(sem1, osWaitForever);
-		
-		osDelay(BLINK_DELAY_TICK);
-		
-		uint32_t tmpTick = osKernelSysTick();
-		printf("%u\n", (tmpTick-old_tick));
-		old_tick = osKernelSysTick();
-
-		osSemaphoreRelease(sem1);
-	}
-}
-
 
 void UART_Init(void)
 {
@@ -209,7 +242,7 @@ int main(void)
 	
 	UART_Init();
 
-	printf("2Go semaphore mux @ %u Hz %s\n", 
+	printf("2Go Barrier Turnstile @ %u Hz %s\n", 
 	SystemCoreClock, 
 	osKernelSystemId);
 	
@@ -219,13 +252,15 @@ int main(void)
 	printf("StandardLib\n");
 #endif
 	
-	sem1 = osSemaphoreCreate(osSemaphore(sem1), 2);	
+	sem1 = osSemaphoreCreate(osSemaphore(sem1), 0);	
+	sem2 = osSemaphoreCreate(osSemaphore(sem2), 1);	
+	Mutex = osSemaphoreCreate(osSemaphore(sem1), 1);	
 	
-	T_mux1 = osThreadCreate(osThread(led_Thread), (void*)1);	
-	T_mux2 = osThreadCreate(osThread(led_Thread), (void*)2);
-	T_mux3 = osThreadCreate(osThread(o_thread), (void*)3);
+	T_thread_ID_1 = osThreadCreate(osThread(test_Thread), (void*)1);	
+	T_thread_ID_2 = osThreadCreate(osThread(test_Thread), (void*)2);
+	T_thread_ID_3 = osThreadCreate(osThread(test_Thread), (void*)3);
 
-	old_tick = osKernelSysTick();
+	old_tick1 = old_tick2 = old_tick3 = osKernelSysTick();
 
 	osKernelStart ();                         // start thread execution 
 }
