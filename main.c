@@ -38,7 +38,6 @@
 #define THREAD_NUM	3
 
 void test_Thread (void const *argument);
-void test_Thread3 (void const *argument);
 
 osThreadDef(test_Thread, osPriorityNormal, THREAD_NUM, 0);
 
@@ -48,10 +47,10 @@ osThreadId T_thread_ID_3;
 /*----------------------------------------------------------------------------
   Define the semaphore
  *---------------------------------------------------------------------------*/	
-osSemaphoreId sem1;									
-osSemaphoreDef(sem1);
-osSemaphoreId sem2;									
-osSemaphoreDef(sem2);
+osSemaphoreId sem_entry;									
+osSemaphoreDef(sem_entry);
+osSemaphoreId sem_exit;									
+osSemaphoreDef(sem_exit);
 
 osSemaphoreId sem_cnt_protect;									
 osSemaphoreDef(sem_cnt_protect);
@@ -194,14 +193,14 @@ void test_Thread(void const *argument)
 		g_cnt ++;
 		if(THREAD_NUM==g_cnt)
 		{
-			osSemaphoreWait(sem2, osWaitForever);					
-			osSemaphoreRelease(sem1);					
+			osSemaphoreWait(sem_exit, osWaitForever);					
+			osSemaphoreRelease(sem_entry);					
 		}			
 		osSemaphoreRelease(sem_cnt_protect);	
 		
 		//The gate entry
-		osSemaphoreWait(sem1, osWaitForever);					
-		osSemaphoreRelease(sem1);		
+		osSemaphoreWait(sem_entry, osWaitForever);					
+		osSemaphoreRelease(sem_entry);		
 			
 		switch(para)
 		{
@@ -232,14 +231,14 @@ void test_Thread(void const *argument)
 		g_cnt --;
 		if(0==g_cnt)
 		{
-				osSemaphoreWait(sem1, osWaitForever);					
-				osSemaphoreRelease(sem2);				
+				osSemaphoreWait(sem_entry, osWaitForever);					
+				osSemaphoreRelease(sem_exit);				
 		}
 		osSemaphoreRelease(sem_cnt_protect);	
 		
 		//The gate exit
-		osSemaphoreWait(sem2, osWaitForever);					
-		osSemaphoreRelease(sem2);			
+		osSemaphoreWait(sem_exit, osWaitForever);					
+		osSemaphoreRelease(sem_exit);			
 	}	
 }
 
@@ -279,8 +278,8 @@ int main(void)
 	printf("StandardLib\n");
 #endif
 	
-	sem1 = osSemaphoreCreate(osSemaphore(sem1), 0);	
-	sem2 = osSemaphoreCreate(osSemaphore(sem2), 1);	
+	sem_entry = osSemaphoreCreate(osSemaphore(sem_entry), 0);	
+	sem_exit = osSemaphoreCreate(osSemaphore(sem_exit), 1);	
 	sem_cnt_protect = osSemaphoreCreate(osSemaphore(sem_cnt_protect), 1);	
 	
 	uart_mutex = osMutexCreate(osMutex(uart_mutex));
