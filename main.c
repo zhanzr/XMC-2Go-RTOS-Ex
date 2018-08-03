@@ -48,18 +48,14 @@ osThreadId T_thread_ID_2;
 osMutexId uart_mutex;
 osMutexDef (uart_mutex);
 
-osMessageQId Q_U32;																		//define the message queue
-osMessageQDef (Q_U32, 4, uint32_t);
-osEvent  result;
-
 typedef struct {
     uint8_t str_data[16];
 	  uint16_t rand_u16;
 	  uint32_t cnt_u32;
 } message_t;
  
-osPoolDef(mpool, 1, message_t);																		//define memory pool
-osPoolId  mpool;
+osMailQDef(mail_box, 4, message_t);								
+osMailQId  mail_box;	
 
 extern ARM_DRIVER_USART Driver_USART0;
 static ARM_DRIVER_USART *UARTdrv = &Driver_USART0; 
@@ -180,15 +176,15 @@ void tx_Thread (void const *argument)
 {
 	for (;;) 
 	{
-		message_t* p_msg = (message_t *) osPoolAlloc(mpool);
+		message_t* p_msg = (message_t *) osMailAlloc(mail_box, osWaitForever);
 		
 		uint16_t tmpU16 = rand();
 		p_msg->rand_u16 = tmpU16;
 		p_msg->cnt_u32 = osKernelSysTick();
-		sprintf((char*)p_msg->str_data, "K[%08X]", p_msg->cnt_u32/1000);
-		mutex_printf("sending pool: %s %04X %08X\n",
+		sprintf((char*)p_msg->str_data, "M:%u", p_msg->cnt_u32/1000);
+		mutex_printf("sending mail: %s %04X %08X\n",
 									p_msg->str_data, p_msg->rand_u16, p_msg->cnt_u32); 
-		osMessagePut(Q_U32,(uint32_t)p_msg,osWaitForever);
+		osMailPut(mail_box,(void*)p_msg);
 		
 		osDelay(BLINK_DELAY_TICK*2);
 	}
@@ -198,13 +194,19 @@ void rx_Thread (void const *argument)
 {
 	for(;;)
 	{		
-		result = 	osMessageGet(Q_U32,osWaitForever);				//wait for a message to arrive
-		message_t* p_msg_rx = (message_t *)result.value.p;
+		osEvent result = osMailGet(mail_box, osWaitForever);	
 		
-		mutex_printf("receiving pool: %s %04X %08X\n",
+		//Check for a valid message
+		if(result.status == osEventMail) 										
+		{
+			message_t* p_msg_rx = (message_t*)result.value.p;									
+		
+			mutex_printf("receiving mail: %s %04X %08X\n",
 									p_msg_rx->str_data, p_msg_rx->rand_u16, p_msg_rx->cnt_u32); 
-		
-		osPoolFree(mpool,p_msg_rx);		
+			
+			//Free the mailslot	
+			osMailFree(mail_box, p_msg_rx);										
+		}
 	}
 }
 
@@ -234,7 +236,7 @@ int main(void)
 	
 	UART_Init();
 
-	printf("2Go Memory pool @ %u Hz %s\n", 
+	printf("2Go Mail Queue @ %u Hz %s\n", 
 	SystemCoreClock, 
 	osKernelSystemId);
 	
@@ -245,10 +247,9 @@ int main(void)
 #endif
 
 	uart_mutex = osMutexCreate(osMutex(uart_mutex));
-		
-	Q_U32 = osMessageCreate(osMessageQ(Q_U32),NULL);					//create the message queue
-
-	mpool = osPoolCreate(osPool(mpool));
+	
+	// Create the mailbox
+	mail_box = osMailCreate(osMailQ(mail_box), NULL);							
 
 	T_thread_ID_1 = osThreadCreate(osThread(tx_Thread), (void*)1);	
 	T_thread_ID_2 = osThreadCreate(osThread(rx_Thread), (void*)2);
