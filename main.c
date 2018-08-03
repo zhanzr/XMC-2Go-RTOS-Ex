@@ -34,11 +34,11 @@
 #define LED2 P1_1
 #define BLINK_DELAY_TICK	500
 
-void uart_Thread1 (void const *argument);
-void uart_Thread2 (void const *argument);
+void tx_Thread (void const *argument);
+void rx_Thread (void const *argument);
 
-osThreadDef(uart_Thread1, osPriorityNormal, 1, 0);
-osThreadDef(uart_Thread2, osPriorityNormal, 1, 0);
+osThreadDef(tx_Thread, osPriorityNormal, 1, 0);
+osThreadDef(rx_Thread, osPriorityNormal, 1, 0);
 
 osThreadId T_thread_ID_1;																			
 osThreadId T_thread_ID_2;
@@ -47,6 +47,10 @@ osThreadId T_thread_ID_2;
  *---------------------------------------------------------------------------*/	
 osMutexId uart_mutex;
 osMutexDef (uart_mutex);
+
+osMessageQId Q_U16;																		//define the message queue
+osMessageQDef (Q_U16, 10, uint16_t);
+osEvent  result;
 
 extern ARM_DRIVER_USART Driver_USART0;
 static ARM_DRIVER_USART *UARTdrv = &Driver_USART0; 
@@ -163,29 +167,23 @@ void LED_Toggle(uint8_t n)
 }
 
 
-/*----------------------------------------------------------------------------
-  Thread one writes to UART
- *---------------------------------------------------------------------------*/
-void uart_Thread1 (void const *argument) 
+void tx_Thread (void const *argument) 
 {
 	for (;;) 
 	{
-		//printf("%s %u\n", __func__, osKernelSysTick());
-		mutex_printf("%s %u\n", __func__, osKernelSysTick());
-		osDelay(BLINK_DELAY_TICK);
+		uint16_t tmpU16 = rand();
+		mutex_printf("sending to queue: %4X\n", tmpU16); 
+		osMessagePut(Q_U16, tmpU16, osWaitForever);			
+		osDelay(BLINK_DELAY_TICK*2);
 	}
 }
 
-/*----------------------------------------------------------------------------
-  Thread two writes to UART
- *---------------------------------------------------------------------------*/
-void uart_Thread2 (void const *argument) 
+void rx_Thread (void const *argument) 
 {
 	for(;;)
 	{
-		//printf("%s %u\n", __func__, osKernelSysTick());
-		mutex_printf("%s %u\n", __func__, osKernelSysTick());
-		osDelay(BLINK_DELAY_TICK);
+		result = 	osMessageGet(Q_U16,osWaitForever);				//wait for a message to arrive
+		mutex_printf("receiving: %4X\n\n", result.value.v);  // write the data to the STDOUT
 	}
 }
 
@@ -215,7 +213,7 @@ int main(void)
 	
 	UART_Init();
 
-	printf("2Go Mutex @ %u Hz %s\n", 
+	printf("2Go Message Queue @ %u Hz %s\n", 
 	SystemCoreClock, 
 	osKernelSystemId);
 	
@@ -226,9 +224,13 @@ int main(void)
 #endif
 
 	uart_mutex = osMutexCreate(osMutex(uart_mutex));
+		
+	Q_U16 = osMessageCreate(osMessageQ(Q_U16),NULL);					//create the message queue
+
+	T_thread_ID_1 = osThreadCreate(osThread(tx_Thread), (void*)1);	
+	T_thread_ID_2 = osThreadCreate(osThread(rx_Thread), (void*)2);
 	
-	T_thread_ID_1 = osThreadCreate(osThread(uart_Thread1), (void*)1);	
-	T_thread_ID_2 = osThreadCreate(osThread(uart_Thread2), (void*)2);
+	srand((uint32_t)__TIME__);
 	
 	osKernelStart ();                         // start thread execution 
 }
