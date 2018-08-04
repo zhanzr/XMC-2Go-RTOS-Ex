@@ -1,22 +1,8 @@
-/**
- * @file
- * @date 1:27 AM 7/25/2018
- * @version 1.0.0
- *
- * @brief RTOS example
- *
- * RTOS Demo, see READ.md for document
- *
- * History
- *
- * Version 1.0.0 
- * - Initial
- *
- */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <XMC1100.h>
 #include <xmc_scu.h>
@@ -26,6 +12,8 @@
 #include <xmc_flash.h>
 
 #include "cmsis_os.h"
+
+#include "Driver_USART.h"
 
 #define LED1 P1_0
 #define LED2 P1_1
@@ -109,6 +97,16 @@ void LED_Toggle(uint8_t n)
 		default:
 			break;
 	}
+}
+
+int stdout_putchar(int ch)
+{
+	XMC_UART_CH_Transmit(XMC_UART0_CH0, ch);
+	for(uint32_t i=0; i<1000; ++i)
+	{
+		__NOP();
+	}
+	return ch;
 }
 
 void led_Thread1 (void const *argument) 
