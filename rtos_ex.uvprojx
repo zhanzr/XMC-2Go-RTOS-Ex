@@ -510,7 +510,7 @@
           <targetInfo name="XMC1100_VQFN24"/>
         </targetInfos>
       </file>
-      <file attr="config" category="source" condition="XMC11xx" name="Device\XMC1100_series\Source\system_XMC1100.c" version="1.9.0">
+      <file attr="config" category="source" condition="XMC11xx" name="Device\XMC1100_series\Source\system_XMC1100.c" version="1.11.0">
         <instance index="0">RTE\Device\XMC1100-Q024x0064\system_XMC1100.c</instance>
         <component Cclass="Device" Cgroup="Startup" Cvendor="Infineon" Cversion="2.1.0" condition="XMC1 CMSIS"/>
         <package license="License/CMSIS_END_USER_LICENSE_AGREEMENT.txt" name="XMC1000_DFP" schemaVersion="1.2" supportContact="http://www.infineon.com/cms/en/corporate/company/contact/support/index.html" url="http://dave.infineon.com/Libraries/CMSIS_PACK/" vendor="Infineon" version="2.8.0"/>
