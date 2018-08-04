@@ -1,18 +1,3 @@
-/**
- * @file
- * @date 1:27 AM 7/25/2018
- * @version 1.0.0
- *
- * @brief RTOS example
- *
- * RTOS Demo, see READ.md for document
- *
- * History
- *
- * Version 1.0.0 
- * - Initial
- *
- */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -244,7 +229,7 @@ int main(void)
 	printf("Microlib\n");
 	#else
 	printf("StandardLib\n");
-#endif
+	#endif
 
 	uart_mutex = osMutexCreate(osMutex(uart_mutex));
 	
