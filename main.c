@@ -113,8 +113,8 @@ void led_Thread1 (void const *argument)
 	for (;;) 
 	{
 		osSignalWait (LED_SIGNAL_1,osWaitForever);
-		LED_On(2);                          
-		LED_Off(1);                          
+		LED_On(1);                          
+		LED_Off(2);                          
 	}
 }
 
@@ -126,8 +126,8 @@ void led_Thread2 (void const *argument)
 	for (;;) 
 	{
 		osSignalWait (LED_SIGNAL_2,osWaitForever);
-		LED_On(1);                          
-		LED_Off(2);     
+		LED_On(2);                          
+		LED_Off(1);     
 	}
 }
 
