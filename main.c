@@ -39,7 +39,7 @@ typedef struct {
 	  uint32_t cnt_u32;
 } message_t;
  
-osMailQDef(mail_box, 4, message_t);								
+osMailQDef(mail_box, 2, message_t);								
 osMailQId  mail_box;	
 
 extern ARM_DRIVER_USART Driver_USART0;
@@ -167,7 +167,7 @@ void tx_Thread (void const *argument)
 		p_msg->rand_u16 = tmpU16;
 		p_msg->cnt_u32 = osKernelSysTick();
 		sprintf((char*)p_msg->str_data, "M:%u", p_msg->cnt_u32/1000);
-		mutex_printf("sending mail: %s %04X %08X\n",
+		mutex_printf("tx m: %s %04X %08X\n",
 									p_msg->str_data, p_msg->rand_u16, p_msg->cnt_u32); 
 		osMailPut(mail_box,(void*)p_msg);
 		
@@ -186,7 +186,7 @@ void rx_Thread (void const *argument)
 		{
 			message_t* p_msg_rx = (message_t*)result.value.p;									
 		
-			mutex_printf("receiving mail: %s %04X %08X\n",
+			mutex_printf("rx m: %s %04X %08X\n",
 									p_msg_rx->str_data, p_msg_rx->rand_u16, p_msg_rx->cnt_u32); 
 			
 			//Free the mailslot	
