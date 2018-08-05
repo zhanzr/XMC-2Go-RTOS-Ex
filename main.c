@@ -118,8 +118,4 @@ int main(void)
 	osTimerStart(timer2, BLINK_DELAY_MS*2);	
 	
 	osKernelStart ();                         // start thread execution 
-	while(1)
-	{
-		;
-	}
 }
