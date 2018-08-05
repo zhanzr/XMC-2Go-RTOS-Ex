@@ -22,11 +22,6 @@
 #define BLINK_DELAY_N	100000
 #define BLINK_DELAY_MS	500
 
-void timer_cb(void const *param);
-
-osTimerDef(timer0_handle, timer_cb);
-osTimerDef(timer1_handle, timer_cb);
-
 /* Initialize peripherals */
 void LED_Initialize(void)
 {
@@ -88,34 +83,43 @@ void LED_Toggle(uint8_t n)
 /*----------------------------------------------------------------------------
   Timer callback function. Toggle the LED associated with the timer
  *---------------------------------------------------------------------------*/
-void timer_cb(void const *param)
+void timer_cb(void* param)
 {
-	switch( (uint32_t) param)
-	{
-		case 1:
-			LED_Toggle(1);
-		break;
+	LED_Toggle(1);
 
-		case 2:
-			LED_Toggle(2);
-		break;
+//	switch( (uint32_t) param)
+//	{
+//		case 1:
+//			LED_Toggle(1);
+//		break;
 
-		default:
-		break;
-	}
+//		case 2:
+//			LED_Toggle(2);
+//		break;
+
+//		default:
+//		break;
+//	}
 }
 
+osTimerId_t timer1;
+osStatus_t oStat1;
 int main(void)
 {
-	osKernelInitialize ();                    // initialize CMSIS-RTOS
+	osKernelInitialize();                    // initialize CMSIS-RTOS
 		
 	LED_Initialize ();
 	
-	osTimerId timer1 = osTimerCreate(osTimer(timer0_handle), osTimerPeriodic, (void *)1);	
-	osTimerId timer2 = osTimerCreate(osTimer(timer1_handle), osTimerPeriodic, (void *)2);	
+	timer1 = osTimerNew(timer_cb, osTimerPeriodic, NULL, NULL);	
+	if(NULL == timer1)
+	{
+		__NOP();
+	}
+	
+//	osTimerId_t timer2 = osTimerNew(timer_cb, osTimerPeriodic, (void *)2, NULL);	
 
-	osTimerStart(timer1, BLINK_DELAY_MS);	
-	osTimerStart(timer2, BLINK_DELAY_MS*2);	
+	oStat1 = osTimerStart(timer1, BLINK_DELAY_MS);	
+//	osTimerStart(timer2, BLINK_DELAY_MS*2);	
 	
 	osKernelStart ();                         // start thread execution 
 }
