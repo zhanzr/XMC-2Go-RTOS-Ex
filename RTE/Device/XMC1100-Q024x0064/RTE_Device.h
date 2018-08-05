@@ -67,10 +67,10 @@
 
 // <e> UART0 (Universal asynchronous receiver transmitter) [Driver_USART0]
 // <i> Configuration settings for Driver_USART0 in component ::Drivers:UART
-#define RTE_UART0                      0
+#define RTE_UART0                      1
 
 //   <o> UART0_TX Pin <0=>P0_14 <1=>P0_15 <2=>P1_0 <3=>P1_1 <5=>P2_0 <6=>P2_1     
-#define RTE_UART0_TX_ID                0
+#define RTE_UART0_TX_ID                6
 
 #if    (RTE_UART0_TX_ID == 0)
 #define RTE_UART0_TX_PORT              P0_14
@@ -95,7 +95,7 @@
 #endif
 
 //   <o> UART0_RX Pin <0=>P0_14 <1=>P0_15 <2=>P1_0 <3=>P1_1 <4=>P2_0 <5=>P2_1 <6=>P2_2
-#define RTE_UART0_RX_ID                0
+#define RTE_UART0_RX_ID                6
 
 #if    (RTE_UART0_RX_ID == 0)
 #define RTE_UART0_RX_PORT              P0_14
