@@ -160,7 +160,7 @@ void test_Thread1 (void const *argument)
 		osDelay(BLINK_DELAY_TICK);
 		
 		osSemaphoreRelease(semArrived2);					//The semaphores ensure both tasks arrive here
-		osSemaphoreWait(semArrived1,osWaitForever);		//before continuing
+		osSemaphoreAcquire(semArrived1,osWaitForever);		//before continuing
 		
 		delta_tick1 = osKernelSysTick() - old_tick1;		
 		old_tick1 = osKernelSysTick();
@@ -169,7 +169,7 @@ void test_Thread1 (void const *argument)
 		osDelay(BLINK_DELAY_TICK);
 		
 		osSemaphoreRelease(semArrived2);					//The semaphores ensure both tasks arrive here
-		osSemaphoreWait(semArrived1,osWaitForever);		//before continuing
+		osSemaphoreAcquire(semArrived1,osWaitForever);		//before continuing
   }
 }
 
@@ -180,7 +180,7 @@ void test_Thread2 (void const *argument)
 	for (;;) 
 	{		
 		osSemaphoreRelease(semArrived1);					//The semaphores ensure both tasks arrive here
-		osSemaphoreWait(semArrived2,osWaitForever);		//before continuing
+		osSemaphoreAcquire(semArrived2,osWaitForever);		//before continuing
 		
 		delta_tick2 = osKernelSysTick() - old_tick2;
 		old_tick2 = osKernelSysTick();
@@ -189,7 +189,7 @@ void test_Thread2 (void const *argument)
 		osDelay(BLINK_DELAY_TICK);
 
 		osSemaphoreRelease(semArrived1);					//The semaphores ensure both tasks arrive here
-		osSemaphoreWait(semArrived2,osWaitForever);		//before continuing
+		osSemaphoreAcquire(semArrived2,osWaitForever);		//before continuing
 	}
 }
 
@@ -230,8 +230,8 @@ int main(void)
 	printf("StandardLib\n");
 #endif
 	
-	semArrived1 = osSemaphoreCreate(osSemaphore(semArrived1), 0);				
-	semArrived2 = osSemaphoreCreate(osSemaphore(semArrived2), 0);		
+	semArrived1 = osSemaphoreNew(1, 0, NULL);			
+	semArrived2 = osSemaphoreNew(1, 0, NULL);	
 	T_test_Thread1 =	osThreadCreate(osThread(test_Thread1), NULL);
 	T_test_Thread2 =	osThreadCreate(osThread(test_Thread2), NULL);
 
