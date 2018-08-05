@@ -109,11 +109,14 @@ void delay_wfe(uint32_t count)
 	}
 }
 
+#if (osCMSIS >= 0x20000U)
+void osRtxIdleThread (void *argument) {
+  (void)argument;
+#else
 /*--------------------------- os_idle_demon ---------------------------------*/
-
 /// \brief The idle demon is running when no other thread is ready to run
 void os_idle_demon (void) {
- 
+#endif
   for (;;) {
     /* HERE: include optional user code to be executed when no thread runs.*/
 		LED_Toggle(1);
