@@ -155,7 +155,7 @@ void led_Thread (void const *argument)
 	
 	for (;;) 
 	{		
-		osSemaphoreWait(sem1, osWaitForever);
+		osSemaphoreAcquire(sem1, osWaitForever);
 		
 		osDelay(BLINK_DELAY_TICK);
 		
@@ -170,7 +170,7 @@ void o_thread (void const *argument)
 		
 	for (;;) 
 	{		
-		osSemaphoreWait(sem1, osWaitForever);
+		osSemaphoreAcquire(sem1, osWaitForever);
 		
 		osDelay(BLINK_DELAY_TICK);
 		
@@ -219,7 +219,7 @@ int main(void)
 	printf("StandardLib\n");
 #endif
 	
-	sem1 = osSemaphoreCreate(osSemaphore(sem1), 2);	
+	sem1 = osSemaphoreNew(2, 1, NULL);	
 	
 	T_mux1 = osThreadCreate(osThread(led_Thread), (void*)1);	
 	T_mux2 = osThreadCreate(osThread(led_Thread), (void*)2);
