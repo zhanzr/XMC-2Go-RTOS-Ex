@@ -160,7 +160,7 @@
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
-          <Filename>RTE\CMSIS\RTX_Config.c</Filename>
+          <Filename>F:\xmc1100_prj\2go_example\XMC-2Go-RTOS-Ex\RTE\CMSIS\RTX_Config.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression>\\RTX_Blinky\RTE/CMSIS/RTX_Config.c\42</Expression>
         </Bp>
@@ -208,11 +208,6 @@
           <AccSizeX>0</AccSizeX>
         </Mm>
       </MemoryWindow2>
-      <ScvdPack>
-        <Filename>H:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\RTOS2\RTX\RTX5.scvd</Filename>
-        <Type>ARM.CMSIS.5.4.0</Type>
-        <SubType>1</SubType>
-      </ScvdPack>
       <Tracepoint>
         <THDelay>0</THDelay>
       </Tracepoint>
