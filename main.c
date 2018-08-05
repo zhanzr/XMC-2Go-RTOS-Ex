@@ -189,17 +189,17 @@ void test_Thread(void const *argument)
 	
 	for (;;) 
 	{				
-		osSemaphoreWait(sem_cnt_protect, osWaitForever);
+		osSemaphoreAcquire(sem_cnt_protect, osWaitForever);
 		g_cnt ++;
 		if(THREAD_NUM==g_cnt)
 		{
-			osSemaphoreWait(sem_exit, osWaitForever);					
+			osSemaphoreAcquire(sem_exit, osWaitForever);					
 			osSemaphoreRelease(sem_entry);					
 		}			
 		osSemaphoreRelease(sem_cnt_protect);	
 		
 		//The gate entry
-		osSemaphoreWait(sem_entry, osWaitForever);					
+		osSemaphoreAcquire(sem_entry, osWaitForever);					
 		osSemaphoreRelease(sem_entry);		
 			
 		switch(para)
@@ -227,17 +227,17 @@ void test_Thread(void const *argument)
 				break;
 		}
 
-		osSemaphoreWait(sem_cnt_protect, osWaitForever);
+		osSemaphoreAcquire(sem_cnt_protect, osWaitForever);
 		g_cnt --;
 		if(0==g_cnt)
 		{
-				osSemaphoreWait(sem_entry, osWaitForever);					
+				osSemaphoreAcquire(sem_entry, osWaitForever);					
 				osSemaphoreRelease(sem_exit);				
 		}
 		osSemaphoreRelease(sem_cnt_protect);	
 		
 		//The gate exit
-		osSemaphoreWait(sem_exit, osWaitForever);					
+		osSemaphoreAcquire(sem_exit, osWaitForever);					
 		osSemaphoreRelease(sem_exit);			
 	}	
 }
@@ -278,9 +278,9 @@ int main(void)
 	printf("StandardLib\n");
 #endif
 	
-	sem_entry = osSemaphoreCreate(osSemaphore(sem_entry), 0);	
-	sem_exit = osSemaphoreCreate(osSemaphore(sem_exit), 1);	
-	sem_cnt_protect = osSemaphoreCreate(osSemaphore(sem_cnt_protect), 1);	
+	sem_entry = osSemaphoreNew(1, 0, NULL);	
+	sem_exit = osSemaphoreNew(1, 1, NULL);	
+	sem_cnt_protect = osSemaphoreNew(1, 1, NULL);	
 	
 	uart_mutex = osMutexCreate(osMutex(uart_mutex));
 	
