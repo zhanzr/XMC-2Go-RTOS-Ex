@@ -85,9 +85,9 @@ void led_thread(void const *argument)
 	while(1)
 	{
 		LED_On(led_n);                          
-		osDelay(BLINK_DELAY_MS);
+		osDelay(BLINK_DELAY_MS*2);
 		LED_Off(led_n);
-		osDelay(BLINK_DELAY_MS);
+		osDelay(BLINK_DELAY_MS*2);
 	}
 }
 
@@ -96,7 +96,7 @@ void led_thread(void const *argument)
  *---------------------------------------------------------------------------*/
 
 osThreadId main_ID,led_ID1,led_ID2;	
-osThreadDef(led_thread, osPriorityNormal, 1, 0);
+osThreadDef(led_thread, osPriorityNormal, 2, 0);
 
 int main(void)
 {
@@ -108,8 +108,4 @@ int main(void)
 	led_ID1 = osThreadCreate(osThread(led_thread), (void*)2);
 
 	osKernelStart ();                         // start thread execution 
-	while(1)
-	{
-		;
-	}
 }
