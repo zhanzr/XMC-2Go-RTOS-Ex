@@ -1,40 +1,32 @@
-/*
- * Copyright (C) 2016 Infineon Technologies AG. All rights reserved.
- *
- * Infineon Technologies AG (Infineon) is supplying this software for use with
- * Infineon's microcontrollers.
- * This file can be freely distributed within development tools that are
- * supporting such microcontrollers.
- *
- * THIS SOFTWARE IS PROVIDED "AS IS". NO WARRANTIES, WHETHER EXPRESS, IMPLIED
- * OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
- * INFINEON SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL,
- * OR CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
- *
- */
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 
-/**
- * @file
- * @date 02 May, 2016
- * @version 1.0.0
- *
- * @brief XMC1100 XMC_2Go RTX Blinky example
- *
- * Two threads are defined to switch on/off the LEDs in the board periodically
- *
- * History
- *
- * Version 1.0.0 
- * - Initial
- *
- */
+#include <XMC1100.h>
+#include <xmc_scu.h>
+#include <xmc_rtc.h>
+#include <xmc_uart.h>
+#include <xmc_gpio.h>
+#include <xmc_flash.h>
 
 #include "cmsis_os.h"
-#include "xmc_gpio.h"
+
+#include "Driver_USART.h"
 
 #define LED1 P1_0
 #define LED2 P1_1
+
+int stdout_putchar(int ch)
+{
+	XMC_UART_CH_Transmit(XMC_UART0_CH0, ch);
+	for(uint32_t i=0; i<1000; ++i)
+	{
+		__NOP();
+	}
+	return ch;
+}
 
 /*----------------------------------------------------------------------------
  * blinkLED: blink LED and wait for signal to go to next LED
