@@ -113,10 +113,10 @@ void led_Thread1 (void const *argument)
 {
 	for (;;) 
 	{
-		osSemaphoreWait(sem1, osWaitForever);
-		LED_On(1);                          
-		osDelay(500);
-		LED_Off(1);                        
+		osSemaphoreAcquire(sem1, osWaitForever);
+		LED_Off(1);                          
+		osSemaphoreAcquire(sem1, osWaitForever);
+		LED_On(1);                        
 	}
 }
 
@@ -193,7 +193,7 @@ int main(void)
 
 	T_led_ID1 = osThreadCreate(osThread(led_Thread1), NULL);	
 	T_led_ID2 = osThreadCreate(osThread(led_Thread2), NULL);
-	sem1 = osSemaphoreCreate(osSemaphore(sem1), 0);	
+	sem1 = osSemaphoreNew(1, 0, NULL);	
 	
 	osKernelStart ();                         // start thread execution 
 }
